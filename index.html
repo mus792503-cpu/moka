@@ -1,23 +1,595 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Pong</title>
-    <link rel="stylesheet" href="styles.css" />
+    <meta name="theme-color" content="#101624" />
+    <title>Squares Game</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0f172a;
+        --bg2: #111d34;
+        --panel: rgba(17, 24, 39, 0.82);
+        --panel-border: rgba(255, 255, 255, 0.08);
+        --text: #edf3ff;
+        --muted: #a9b8d0;
+        --mint: #68f0cc;
+        --mint-strong: #53d7b0;
+        --violet: #9f8cff;
+        --amber: #ffca6a;
+        --rose: #ff6b8b;
+        --shadow: rgba(0, 0, 0, 0.32);
+      }
+
+      * { box-sizing: border-box; }
+
+      html, body {
+        margin: 0;
+        min-height: 100%;
+        min-height: 100vh;
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        background: radial-gradient(circle at top, #1a2747 0%, #101a2e 38%, var(--bg) 100%);
+        color: var(--text);
+      }
+
+      body {
+        display: grid;
+        place-items: center;
+        padding: 18px;
+      }
+
+      .app {
+        width: min(100%, 560px);
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 18px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .brand-badge {
+        display: grid;
+        grid-template-columns: repeat(2, 12px);
+        gap: 4px;
+        padding: 5px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid var(--panel-border);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.18);
+      }
+
+      .brand-badge span {
+        display: block;
+        width: 12px;
+        height: 12px;
+        border-radius: 4px;
+        background: var(--mint);
+      }
+
+      .brand-badge span:nth-child(2),
+      .brand-badge span:nth-child(3) {
+        background: var(--violet);
+      }
+
+      .brand-copy {
+        line-height: 1.1;
+      }
+
+      .brand-title {
+        font-weight: 800;
+        letter-spacing: 0.18em;
+        font-size: 0.93rem;
+      }
+
+      .brand-sub {
+        color: var(--muted);
+        font-size: 0.72rem;
+        margin-top: 4px;
+      }
+
+      .sound-btn {
+        border: 1px solid var(--panel-border);
+        background: rgba(255, 255, 255, 0.03);
+        color: var(--text);
+        border-radius: 14px;
+        width: 44px;
+        height: 44px;
+        font-size: 1.2rem;
+        cursor: pointer;
+        transition: transform 0.18s ease, background 0.18s ease;
+      }
+
+      .sound-btn:hover {
+        transform: translateY(-1px);
+        background: rgba(255, 255, 255, 0.06);
+      }
+
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--panel-border);
+        border-radius: 28px;
+        box-shadow: 0 22px 60px rgba(0, 0, 0, 0.34);
+        padding: clamp(18px, 4vw, 30px);
+        backdrop-filter: blur(12px);
+      }
+
+      .intro {
+        text-align: center;
+        margin-bottom: 18px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(2rem, 5vw, 2.5rem);
+        letter-spacing: -0.05em;
+      }
+
+      .intro p {
+        margin: 8px 0 0;
+        color: var(--muted);
+        font-size: 0.92rem;
+        line-height: 1.8;
+      }
+
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+        margin-bottom: 18px;
+      }
+
+      .stat {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--panel-border);
+        border-radius: 18px;
+        padding: 12px 8px 10px;
+        text-align: center;
+      }
+
+      .stat-label {
+        display: block;
+        color: var(--muted);
+        font-size: 0.69rem;
+      }
+
+      .stat-value {
+        display: block;
+        margin-top: 4px;
+        font-size: clamp(1.4rem, 5vw, 2.1rem);
+        font-weight: 800;
+        letter-spacing: -0.04em;
+      }
+
+      .timer-track {
+        height: 8px;
+        background: rgba(255, 255, 255, 0.09);
+        border-radius: 999px;
+        overflow: hidden;
+        margin: 4px 4px 18px;
+      }
+
+      .timer-bar {
+        width: 100%;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, var(--mint), #baf9e3);
+        transition: width 0.22s linear, background 0.2s ease;
+      }
+
+      .timer-bar.low {
+        background: linear-gradient(90deg, #ffb167, var(--rose));
+      }
+
+      .prompt {
+        min-height: 28px;
+        margin: 0 0 16px;
+        text-align: center;
+        color: #dfe8ff;
+        font-size: 0.93rem;
+      }
+
+      .prompt strong {
+        color: var(--mint);
+      }
+
+      .board-wrap {
+        position: relative;
+      }
+
+      .board {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: clamp(8px, 2vw, 12px);
+        width: 100%;
+        aspect-ratio: 1;
+        padding: clamp(10px, 3vw, 16px);
+        border-radius: 22px;
+        background: rgba(15, 23, 42, 0.8);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        touch-action: manipulation;
+      }
+
+      .tile {
+        appearance: none;
+        border: 0;
+        border-radius: 14px;
+        background: var(--tile-color, var(--mint));
+        cursor: pointer;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), 0 6px 12px rgba(0, 0, 0, 0.14);
+        transition: transform 0.12s ease, filter 0.12s ease, opacity 0.12s ease;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      .tile:hover {
+        transform: translateY(-1px) scale(0.99);
+        filter: brightness(1.05);
+      }
+
+      .tile:active {
+        transform: scale(0.97);
+      }
+
+      .tile.correct {
+        animation: pop 0.24s ease;
+      }
+
+      .tile.wrong {
+        animation: shake 0.25s ease;
+        filter: brightness(0.72);
+      }
+
+      @keyframes pop {
+        50% { transform: scale(0.82); }
+      }
+
+      @keyframes shake {
+        25%, 75% { transform: translateX(4px); }
+        50% { transform: translateX(-4px); }
+      }
+
+      .overlay {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        background: rgba(9, 13, 22, 0.74);
+        border-radius: 22px;
+        backdrop-filter: blur(4px);
+      }
+
+      .overlay[hidden] {
+        display: none;
+      }
+
+      .overlay-box {
+        text-align: center;
+        padding: 18px 16px 14px;
+      }
+
+      .overlay-icon {
+        font-size: clamp(2.1rem, 6vw, 2.8rem);
+        margin-bottom: 6px;
+      }
+
+      .overlay h2 {
+        margin: 0 0 6px;
+        font-size: clamp(1.5rem, 5vw, 2rem);
+      }
+
+      .overlay p {
+        margin: 0 0 16px;
+        color: var(--muted);
+        font-size: 0.88rem;
+        line-height: 1.8;
+      }
+
+      .actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 18px;
+      }
+
+      .btn {
+        border: 0;
+        border-radius: 14px;
+        min-height: 48px;
+        padding: 0 18px;
+        font-size: 1rem;
+        font-weight: 800;
+        cursor: pointer;
+        transition: transform 0.15s ease, filter 0.15s ease;
+      }
+
+      .btn:hover {
+        transform: translateY(-1px);
+        filter: brightness(1.06);
+      }
+
+      .btn-primary {
+        flex: 1;
+        background: linear-gradient(135deg, var(--mint), #b5f4df 80%);
+        color: #07161c;
+        box-shadow: 0 10px 24px rgba(104, 240, 204, 0.2);
+      }
+
+      .btn-secondary {
+        width: 58px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid var(--panel-border);
+        color: var(--text);
+      }
+
+      .footnote {
+        margin: 16px 0 0;
+        text-align: center;
+        color: var(--muted);
+        font-size: 0.75rem;
+      }
+
+      @media (max-width: 420px) {
+        body { padding: 14px; }
+        .card { border-radius: 22px; }
+        .board { gap: 8px; }
+        .stat { padding: 10px 6px 8px; }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+          scroll-behavior: auto !important;
+        }
+      }
+    </style>
   </head>
   <body>
-    <main class="game-shell">
-      <h1>Pong</h1>
-      <p class="controls">Move your mouse over the game or use ↑ / ↓ to move the left paddle.</p>
+    <main class="app">
+      <header class="topbar">
+        <div class="brand" aria-label="Squares Game">
+          <div class="brand-badge" aria-hidden="true">
+            <span></span><span></span><span></span><span></span>
+          </div>
+          <div class="brand-copy">
+            <div class="brand-title">SQUARES</div>
+            <div class="brand-sub">لعبة التركيز والسرعة</div>
+          </div>
+        </div>
+        <button id="soundBtn" class="sound-btn" type="button" aria-label="تشغيل الصوت" title="الصوت">🔊</button>
+      </header>
 
-      <div class="canvas-wrap">
-        <canvas id="gameCanvas" width="900" height="520" aria-label="Pong game"></canvas>
-      </div>
+      <section class="card">
+        <div class="intro">
+          <h1>اختر المربع المختلف</h1>
+          <p>اضغط على المربع الذي يختلف في اللون عن الباقي قبل أن ينتهي الوقت.</p>
+        </div>
 
-      <button id="restartBtn" type="button">Restart</button>
+        <div class="stats" aria-live="polite">
+          <div class="stat">
+            <span class="stat-label">النقاط</span>
+            <strong id="score" class="stat-value">0</strong>
+          </div>
+          <div class="stat">
+            <span class="stat-label">الزمن</span>
+            <strong id="time" class="stat-value">45</strong>
+          </div>
+          <div class="stat">
+            <span class="stat-label">الأفضل</span>
+            <strong id="best" class="stat-value">0</strong>
+          </div>
+        </div>
+
+        <div class="timer-track" aria-hidden="true">
+          <div id="timerBar" class="timer-bar"></div>
+        </div>
+
+        <p id="prompt" class="prompt" aria-live="polite">جاهز؟ اضغط على «ابدأ اللعب»</p>
+
+        <div class="board-wrap">
+          <div id="board" class="board" aria-label="لوحة المربعات"></div>
+
+          <div id="overlay" class="overlay" aria-live="polite">
+            <div class="overlay-box">
+              <div id="overlayIcon" class="overlay-icon">🎯</div>
+              <h2 id="overlayTitle">مبروك</h2>
+              <p id="overlayText">لك 45 ثانية للعثور على أكبر عدد من المربعات المختلفة.</p>
+              <button id="overlayBtn" class="btn btn-primary" type="button">ابدأ اللعب</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button id="startBtn" class="btn btn-primary" type="button">ابدأ اللعب</button>
+          <button id="resetBtn" class="btn btn-secondary" type="button" aria-label="إعادة اللعب">↻</button>
+        </div>
+
+        <p class="footnote">كل إجابة صحيحة تمنحك ثانيتين إضافيتين وتزيد من مستوى الصعوبة.</p>
+      </section>
     </main>
 
-    <script src="script.js"></script>
+    <script>
+      (() => {
+        const BOARD_SIZE = 25;
+        const ROUND_TIME = 45;
+
+        const boardEl = document.getElementById('board');
+        const scoreEl = document.getElementById('score');
+        const timeEl = document.getElementById('time');
+        const bestEl = document.getElementById('best');
+        const timerBar = document.getElementById('timerBar');
+        const promptEl = document.getElementById('prompt');
+        const overlayEl = document.getElementById('overlay');
+        const overlayIconEl = document.getElementById('overlayIcon');
+        const overlayTitleEl = document.getElementById('overlayTitle');
+        const overlayTextEl = document.getElementById('overlayText');
+        const overlayBtn = document.getElementById('overlayBtn');
+        const startBtn = document.getElementById('startBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const soundBtn = document.getElementById('soundBtn');
+
+        let score = 0;
+        let timeLeft = ROUND_TIME;
+        let correctIndex = -1;
+        let playing = false;
+        let timerId = null;
+        let soundOn = true;
+        let audioCtx = null;
+        let bestScore = Number(localStorage.getItem('squares-best') || 0);
+
+        bestEl.textContent = bestScore;
+
+        function ensureAudio() {
+          if (!soundOn) return null;
+          const AudioCtor = window.AudioContext || window.webkitAudioContext;
+          if (!AudioCtor) return null;
+          if (!audioCtx) audioCtx = new AudioCtor();
+          if (audioCtx.state === 'suspended') audioCtx.resume();
+          return audioCtx;
+        }
+
+        function beep(freq = 520, duration = 0.08, kind = 'sine') {
+          const ctx = ensureAudio();
+          if (!ctx) return;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = kind;
+          osc.frequency.value = freq;
+          gain.gain.value = 0.05;
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start();
+          osc.stop(ctx.currentTime + duration);
+        }
+
+        function updateTimerUI() {
+          const percent = Math.max(0, (timeLeft / ROUND_TIME) * 100);
+          timeEl.textContent = Math.ceil(timeLeft);
+          timerBar.style.width = percent + '%';
+          timerBar.classList.toggle('low', timeLeft <= 10);
+        }
+
+        function generateBoard() {
+          boardEl.innerHTML = '';
+
+          const baseHue = Math.floor(Math.random() * 360);
+          const sat = 65 + Math.floor(Math.random() * 14);
+          const baseLight = 52 + Math.floor(Math.random() * 8);
+          const offset = 9 + Math.floor(score / 2) + Math.floor(Math.random() * 7);
+          correctIndex = Math.floor(Math.random() * BOARD_SIZE);
+
+          for (let i = 0; i < BOARD_SIZE; i++) {
+            const tile = document.createElement('button');
+            tile.type = 'button';
+            tile.className = 'tile';
+            tile.setAttribute('aria-label', 'مربع');
+
+            const isCorrect = i === correctIndex;
+            const lightness = isCorrect ? baseLight + offset : baseLight;
+            const color = `hsl(${baseHue} ${sat}% ${lightness}%)`;
+            tile.style.setProperty('--tile-color', color);
+
+            tile.addEventListener('click', () => handleTileClick(i, tile));
+            boardEl.appendChild(tile);
+          }
+        }
+
+        function handleTileClick(index, tile) {
+          if (!playing) return;
+
+          if (index === correctIndex) {
+            score += 1;
+            scoreEl.textContent = score;
+            timeLeft = Math.min(ROUND_TIME, timeLeft + 1.5);
+            updateTimerUI();
+            promptEl.innerHTML = '<strong>إجابة صحيحة!</strong> +1.5 ثانية';
+            tile.classList.add('correct');
+            beep(760, 0.08, 'triangle');
+
+            if (score > bestScore) {
+              bestScore = score;
+              bestEl.textContent = bestScore;
+              try { localStorage.setItem('squares-best', String(bestScore)); } catch (e) {}
+            }
+
+            setTimeout(() => {
+              if (playing) generateBoard();
+            }, 130);
+          } else {
+            score = Math.max(0, score - 1);
+            scoreEl.textContent = score;
+            timeLeft = Math.max(0, timeLeft - 2.5);
+            updateTimerUI();
+            promptEl.textContent = 'خطأ! حاول مرة أخرى.';
+            tile.classList.add('wrong');
+            beep(180, 0.12, 'sawtooth');
+
+            if (timeLeft <= 0) {
+              finishGame();
+            }
+          }
+        }
+
+        function startGame() {
+          clearInterval(timerId);
+          score = 0;
+          timeLeft = ROUND_TIME;
+          scoreEl.textContent = score;
+          updateTimerUI();
+          promptEl.textContent = 'اختر المربع الذي يختلف عن الباقي.';
+          overlayEl.hidden = true;
+          playing = true;
+          startBtn.textContent = 'إعادة اللعب';
+          generateBoard();
+
+          timerId = setInterval(() => {
+            if (!playing) return;
+            timeLeft = Math.max(0, timeLeft - 0.1);
+            updateTimerUI();
+            if (timeLeft <= 0) finishGame();
+          }, 100);
+        }
+
+        function finishGame() {
+          if (!playing) return;
+          playing = false;
+          clearInterval(timerId);
+          timeLeft = 0;
+          updateTimerUI();
+
+          overlayIconEl.textContent = score >= 12 ? '🏆' : '⏱️';
+          overlayTitleEl.textContent = 'انتهت اللعبة!';
+          overlayTextEl.textContent = 'حصلت على ' + score + ' نقطة. حاول مرة أخرى وتحطم رقمك الشخصي.';
+          overlayEl.hidden = false;
+          promptEl.textContent = 'الوقت انتهى!';
+          beep(310, 0.18, 'sine');
+        }
+
+        function toggleSound() {
+          soundOn = !soundOn;
+          soundBtn.textContent = soundOn ? '🔊' : '🔇';
+          soundBtn.setAttribute('aria-label', soundOn ? 'إيقاف الصوت' : 'تشغيل الصوت');
+          if (soundOn) beep(520, 0.05, 'triangle');
+        }
+
+        startBtn.addEventListener('click', startGame);
+        overlayBtn.addEventListener('click', startGame);
+        resetBtn.addEventListener('click', startGame);
+        soundBtn.addEventListener('click', toggleSound);
+
+        updateTimerUI();
+        overlayEl.hidden = false;
+        promptEl.textContent = 'جاهز؟ اضغط على «ابدأ اللعب»';
+        generateBoard();
+      })();
+    </script>
   </body>
 </html>
